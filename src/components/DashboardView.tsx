@@ -59,7 +59,6 @@ const DashboardView = () => {
     },
   });
 
-  // Query to fetch collection totals
   const { data: collectionTotals } = useQuery({
     queryKey: ['collectionTotals'],
     queryFn: async () => {
@@ -92,18 +91,13 @@ const DashboardView = () => {
     memberProfile?.emergency_collection_status === 'completed';
 
   return (
-    <div className="container mx-auto px-4">
-      <header className="mb-6">
-        <h1 className="text-2xl font-medium mb-1 text-white">Dashboard</h1>
-        <p className="text-dashboard-text text-sm">Welcome back!</p>
-      </header>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div className="col-span-1 md:col-span-2 xl:col-span-3">
+    <div className="space-y-3">
+      <div className="grid-dashboard">
+        <div className="grid-dashboard-full">
           <MemberProfileCard memberProfile={memberProfile} />
         </div>
         
-        <div className="col-span-1 md:col-span-1">
+        <div className="grid-dashboard-half">
           <PaymentCard 
             annualPaymentStatus={(memberProfile?.yearly_payment_status || 'pending') as 'completed' | 'pending'}
             emergencyCollectionStatus={(memberProfile?.emergency_collection_status || 'pending') as 'completed' | 'pending'}
@@ -113,11 +107,11 @@ const DashboardView = () => {
           />
         </div>
 
-        <div className="col-span-1 md:col-span-1 xl:col-span-2">
+        <div className="grid-dashboard-half">
           <MonthlyChart />
         </div>
 
-        <div className="col-span-1 md:col-span-2 xl:col-span-3">
+        <div className="grid-dashboard-full">
           <PaymentHistoryTable />
         </div>
       </div>
