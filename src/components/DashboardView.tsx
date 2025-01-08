@@ -82,7 +82,7 @@ const DashboardView = () => {
         emergencyPending,
         totalEmergencyAmount,
         collectedEmergencyAmount,
-        totalYearlyAmount: totalMembers * 40,
+        totalYearlyAmount: totalMembers * 40, // £40 per member
         collectedYearlyAmount: (totalMembers - yearlyPending) * 40
       };
     }
@@ -92,36 +92,28 @@ const DashboardView = () => {
     memberProfile?.emergency_collection_status === 'completed';
 
   return (
-    <div className="container mx-auto px-4">
-      <header className="mb-6">
-        <h1 className="text-2xl font-medium mb-1 text-white">Dashboard</h1>
-        <p className="text-dashboard-text text-sm">Welcome back!</p>
+    <>
+      <header className="mb-8">
+        <h1 className="text-3xl font-medium mb-2 text-white">Dashboard</h1>
+        <p className="text-dashboard-text">Welcome back!</p>
       </header>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
-        <div className="col-span-1 md:col-span-2 xl:col-span-3">
-          <MemberProfileCard memberProfile={memberProfile} />
-        </div>
+      <div className="grid gap-6">
+        <MemberProfileCard memberProfile={memberProfile} />
         
-        <div className="col-span-1 md:col-span-1">
-          <PaymentCard 
-            annualPaymentStatus={(memberProfile?.yearly_payment_status || 'pending') as 'completed' | 'pending'}
-            emergencyCollectionStatus={(memberProfile?.emergency_collection_status || 'pending') as 'completed' | 'pending'}
-            emergencyCollectionAmount={memberProfile?.emergency_collection_amount}
-            annualPaymentDueDate={memberProfile?.yearly_payment_due_date}
-            emergencyCollectionDueDate={memberProfile?.emergency_collection_due_date}
-          />
-        </div>
+        <PaymentCard 
+          annualPaymentStatus={(memberProfile?.yearly_payment_status || 'pending') as 'completed' | 'pending'}
+          emergencyCollectionStatus={(memberProfile?.emergency_collection_status || 'pending') as 'completed' | 'pending'}
+          emergencyCollectionAmount={memberProfile?.emergency_collection_amount}
+          annualPaymentDueDate={memberProfile?.yearly_payment_due_date}
+          emergencyCollectionDueDate={memberProfile?.emergency_collection_due_date}
+        />
 
-        <div className="col-span-1 md:col-span-1 xl:col-span-2">
-          <MonthlyChart />
-        </div>
+        <MonthlyChart />
 
-        <div className="col-span-1 md:col-span-2 xl:col-span-3">
-          <PaymentHistoryTable />
-        </div>
+        <PaymentHistoryTable />
       </div>
-    </div>
+    </>
   );
 };
 

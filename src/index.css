@@ -34,25 +34,13 @@
 }
 
 .glass-card {
-  @apply bg-dashboard-card bg-opacity-50 backdrop-blur-lg border border-dashboard-cardBorder rounded-lg transition-all duration-300 hover:border-dashboard-cardBorderHover hover:bg-dashboard-cardHover;
+  @apply bg-dashboard-card bg-opacity-50 backdrop-blur-lg border border-dashboard-cardBorder rounded-xl transition-all duration-300 hover:border-dashboard-cardBorderHover hover:bg-dashboard-cardHover;
 }
 
 .dashboard-card {
-  @apply p-4 glass-card;
+  @apply p-6 glass-card;
 }
 
 .metric-card {
-  @apply relative flex flex-col items-center justify-center p-6 dashboard-card;
-}
-
-.compact-card {
-  @apply p-3 glass-card text-sm;
-}
-
-.compact-dashboard-card {
-  @apply p-4 glass-card space-y-3;
-}
-
-.compact-metric-card {
-  @apply relative flex flex-col items-center justify-center p-4 dashboard-card;
+  @apply relative flex flex-col items-center justify-center p-8 dashboard-card;
 }
