@@ -54,6 +54,7 @@ const GitOperationsCard = () => {
 
   const logOperation = async (status: string, message: string) => {
     try {
+      console.log(`Logging operation - Status: ${status}, Message: ${message}`);
       const { error } = await supabase
         .from('git_operations_logs')
         .insert({
@@ -85,9 +86,11 @@ const GitOperationsCard = () => {
       if (!session) {
         throw new Error('No active session');
       }
+      console.log('Session verified:', session.user.id);
 
       setProgress(30);
       setCurrentOperation('Authenticating with GitHub...');
+      console.log('Attempting to authenticate with GitHub...');
 
       const { data: recentOps, error: queryError } = await supabase
         .from('git_operations_logs')
@@ -104,9 +107,11 @@ const GitOperationsCard = () => {
 
       setProgress(50);
       setCurrentOperation('Preparing to push changes...');
+      console.log('Invoking git-operations edge function...');
 
       const { data, error } = await supabase.functions.invoke('git-operations', {
         body: {
+          operation: 'push',
           branch: 'main',
           commitMessage: 'Force commit: Pushing all files to master'
         }

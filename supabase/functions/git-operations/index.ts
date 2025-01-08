@@ -7,6 +7,7 @@ const corsHeaders = {
 }
 
 interface GitOperationRequest {
+  operation: string;
   branch?: string;
   commitMessage?: string;
 }
@@ -51,27 +52,12 @@ serve(async (req) => {
       throw new Error('GitHub token not configured in Edge Function secrets');
     }
 
-    // Basic validation - just ensure token is not empty
-    if (!githubToken.trim()) {
-      console.error('Empty GitHub token');
-      throw new Error('GitHub token cannot be empty');
-    }
+    const { operation = 'push', branch = 'main', commitMessage = 'Force commit: Pushing all files to master' } = await req.json() as GitOperationRequest;
 
-    const { branch = 'main', commitMessage = 'Force commit: Pushing all files to master' } = await req.json() as GitOperationRequest;
-
-    // Log operation start
-    const { error: logError } = await supabase
-      .from('git_operations_logs')
-      .insert({
-        operation_type: 'push',
-        status: 'started',
-        created_by: user.id,
-        message: 'Starting Git push operation'
-      });
-
-    if (logError) {
-      console.error('Error logging operation:', logError);
-    }
+    // Log operation details
+    console.log('Operation:', operation);
+    console.log('Branch:', branch);
+    console.log('Commit message:', commitMessage);
 
     // GitHub API endpoint
     const repoOwner = 'imedia765';
@@ -80,7 +66,7 @@ serve(async (req) => {
 
     console.log('Fetching current branch state...');
     
-    // Test GitHub token with a simple API call first
+    // Test GitHub token with a simple API call
     console.log('Testing GitHub token...');
     const testResponse = await fetch('https://api.github.com/user', {
       headers: {
@@ -90,16 +76,15 @@ serve(async (req) => {
       }
     });
 
-    const testResponseText = await testResponse.text();
-    console.log('GitHub token test response:', testResponseText);
-
     if (!testResponse.ok) {
-      console.error('GitHub token test failed:', testResponseText);
-      throw new Error(`GitHub token validation failed: ${testResponseText}`);
+      const errorText = await testResponse.text();
+      console.error('GitHub token test failed:', errorText);
+      throw new Error(`GitHub token validation failed: ${errorText}`);
     }
 
+    console.log('GitHub token validated successfully');
+
     // Get the latest commit SHA
-    console.log('Fetching branch information...');
     const response = await fetch(apiUrl, {
       headers: {
         'Authorization': `token ${githubToken}`,
@@ -108,31 +93,29 @@ serve(async (req) => {
       }
     });
 
-    const responseText = await response.text();
-    console.log('GitHub API response:', responseText);
-
     if (!response.ok) {
-      console.error('GitHub API error:', responseText);
-      throw new Error(`GitHub API error: ${responseText}`);
+      const errorText = await response.text();
+      console.error('GitHub API error:', errorText);
+      throw new Error(`GitHub API error: ${errorText}`);
     }
 
-    const data = JSON.parse(responseText);
+    const data = await response.json();
     console.log('Current branch state:', JSON.stringify(data, null, 2));
 
-    // Update log with success
+    // Log success in git_operations_logs
     await supabase
       .from('git_operations_logs')
       .insert({
-        operation_type: 'push',
+        operation_type: operation,
         status: 'completed',
         created_by: user.id,
-        message: `Successfully pushed to ${branch}`
+        message: `Successfully executed ${operation} operation on ${branch}`
       });
 
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Successfully pushed to ${branch}`,
+        message: `Successfully executed ${operation} operation on ${branch}`,
         data: data
       }),
       {
