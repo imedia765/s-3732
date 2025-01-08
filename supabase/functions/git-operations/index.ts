@@ -22,10 +22,15 @@ serve(async (req) => {
     console.log('Git operation started');
     
     // Create Supabase client
-    const supabase = createClient(
-      Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
-    )
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+
+    if (!supabaseUrl || !supabaseKey) {
+      console.error('Supabase configuration missing');
+      throw new Error('Supabase configuration missing');
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
 
     // Verify authentication
     const authHeader = req.headers.get('Authorization');
@@ -48,8 +53,8 @@ serve(async (req) => {
     // Get GitHub token from secrets
     const githubToken = Deno.env.get('GITHUB_PAT');
     if (!githubToken) {
-      console.error('GitHub token not configured');
-      throw new Error('GitHub token not configured in Edge Function secrets');
+      console.error('GitHub token not found in secrets');
+      throw new Error('GitHub token not configured in Edge Function secrets. Please add GITHUB_PAT to your Edge Function secrets.');
     }
 
     const { operation = 'push', branch = 'main', commitMessage = 'Force commit: Pushing all files to master' } = await req.json() as GitOperationRequest;
