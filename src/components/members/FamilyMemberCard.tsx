@@ -1,5 +1,11 @@
 import { Card } from "@/components/ui/card";
 import { Users } from "lucide-react";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableRow,
+} from "@/components/ui/table";
 
 interface FamilyMemberCardProps {
   name: string | null;
@@ -21,36 +27,43 @@ const FamilyMemberCard = ({ name, relationship, dob, gender, memberNumber }: Fam
           <Users className="w-5 h-5 text-[#0EA5E9]" />
         </div>
         
-        <div className="space-y-1">
-          <h3 className="text-lg font-medium text-gray-900">
-            {name || 'Not provided'}
-          </h3>
-          
-          <div className="space-y-1 text-sm text-gray-600">
-            {memberNumber && (
-              <p>
-                <span className="font-medium">Member Number:</span> {memberNumber}
-              </p>
-            )}
-            
-            {relationship && (
-              <p>
-                <span className="font-medium">Relationship:</span> {relationship}
-              </p>
-            )}
-            
-            {dob && (
-              <p>
-                <span className="font-medium">Date of Birth:</span> {dob}
-              </p>
-            )}
-            
-            {gender && (
-              <p>
-                <span className="font-medium">Gender:</span> {gender}
-              </p>
-            )}
-          </div>
+        <div className="w-full">
+          <Table>
+            <TableBody>
+              <TableRow className="border-b border-[#0EA5E9]/10">
+                <TableCell className="py-2 text-[#1A1F2C] font-medium">Name</TableCell>
+                <TableCell className="py-2 text-[#403E43]">{name || 'Not provided'}</TableCell>
+              </TableRow>
+              
+              {memberNumber && (
+                <TableRow className="border-b border-[#0EA5E9]/10">
+                  <TableCell className="py-2 text-[#1A1F2C] font-medium">Member Number</TableCell>
+                  <TableCell className="py-2 text-[#403E43]">{memberNumber}</TableCell>
+                </TableRow>
+              )}
+              
+              {relationship && (
+                <TableRow className="border-b border-[#0EA5E9]/10">
+                  <TableCell className="py-2 text-[#1A1F2C] font-medium">Relationship</TableCell>
+                  <TableCell className="py-2 text-[#403E43] capitalize">{relationship}</TableCell>
+                </TableRow>
+              )}
+              
+              {dob && (
+                <TableRow className="border-b border-[#0EA5E9]/10">
+                  <TableCell className="py-2 text-[#1A1F2C] font-medium">Date of Birth</TableCell>
+                  <TableCell className="py-2 text-[#403E43]">{dob}</TableCell>
+                </TableRow>
+              )}
+              
+              {gender && (
+                <TableRow className="border-b border-[#0EA5E9]/10">
+                  <TableCell className="py-2 text-[#1A1F2C] font-medium">Gender</TableCell>
+                  <TableCell className="py-2 text-[#403E43] capitalize">{gender}</TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
         </div>
       </div>
     </Card>
