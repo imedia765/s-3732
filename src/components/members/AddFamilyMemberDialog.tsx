@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Member } from "@/types/member";
@@ -23,6 +23,29 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
     date_of_birth: '',
     gender: ''
   });
+  const [previewMemberNumber, setPreviewMemberNumber] = useState<string>('');
+
+  useEffect(() => {
+    const generatePreviewNumber = async () => {
+      if (!member.member_number) return;
+      
+      const { data, error } = await supabase
+        .rpc('generate_family_member_number', {
+          parent_member_number: member.member_number
+        });
+
+      if (error) {
+        console.error('Error generating preview number:', error);
+        return;
+      }
+
+      setPreviewMemberNumber(data);
+    };
+
+    if (open) {
+      generatePreviewNumber();
+    }
+  }, [open, member.member_number]);
 
   const handleSave = async () => {
     try {
@@ -74,6 +97,17 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
         </DialogHeader>
         
         <div className="grid gap-4 py-4">
+          {previewMemberNumber && (
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label className="text-right text-dashboard-text">
+                Member Number
+              </Label>
+              <div className="col-span-3 px-3 py-2 bg-dashboard-dark/50 rounded text-white border border-dashboard-accent1/20">
+                {previewMemberNumber}
+              </div>
+            </div>
+          )}
+
           <div className="grid grid-cols-4 items-center gap-4">
             <Label htmlFor="name" className="text-right text-dashboard-text">
               Name
