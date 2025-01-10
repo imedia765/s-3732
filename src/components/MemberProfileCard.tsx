@@ -138,7 +138,7 @@ const MemberProfileCard = ({ memberProfile }: MemberProfileCardProps) => {
                         relationship={familyMember.relationship}
                         dob={familyMember.date_of_birth?.toString() || null}
                         gender={familyMember.gender}
-                        memberNumber={familyMember.member_number}
+                        memberNumber={familyMember.family_member_number}
                       />
                     ))}
                   </div>
