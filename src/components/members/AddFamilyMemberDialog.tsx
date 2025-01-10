@@ -37,7 +37,18 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
           gender: formData.gender
         });
 
-      if (error) throw error;
+      if (error) {
+        if (error.message.includes('Maximum of 4 spouses')) {
+          toast({
+            title: "Error",
+            description: "Maximum of 4 spouses allowed per member",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+        return;
+      }
 
       toast({
         title: "Success",
@@ -89,6 +100,7 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
               <SelectContent>
                 <SelectItem value="spouse">Spouse</SelectItem>
                 <SelectItem value="dependant">Dependant</SelectItem>
+                <SelectItem value="adopted">Adopted</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -120,7 +132,6 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
               <SelectContent>
                 <SelectItem value="male">Male</SelectItem>
                 <SelectItem value="female">Female</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
               </SelectContent>
             </Select>
           </div>
