@@ -24,6 +24,7 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
     gender: ''
   });
   const [previewMemberNumber, setPreviewMemberNumber] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     const generatePreviewNumber = async () => {
@@ -44,23 +45,43 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
 
     if (open) {
       generatePreviewNumber();
+      // Reset form data when dialog opens
+      setFormData({
+        full_name: '',
+        relationship: '',
+        date_of_birth: '',
+        gender: ''
+      });
     }
   }, [open, member.member_number]);
 
   const handleSave = async () => {
     try {
+      if (!formData.full_name || !formData.relationship || !formData.gender) {
+        toast({
+          title: "Error",
+          description: "Please fill in all required fields",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      setIsSubmitting(true);
+      console.log('Submitting family member:', { ...formData, member_number: previewMemberNumber });
+
       const { error } = await supabase
         .from('family_members')
         .insert({
           member_id: member.id,
-          member_number: null, // This will trigger the database function to generate the number
+          member_number: previewMemberNumber,
           full_name: formData.full_name,
           relationship: formData.relationship,
-          date_of_birth: formData.date_of_birth,
+          date_of_birth: formData.date_of_birth || null,
           gender: formData.gender
         });
 
       if (error) {
+        console.error('Error adding family member:', error);
         if (error.message.includes('Maximum of 4 spouses')) {
           toast({
             title: "Error",
@@ -68,7 +89,11 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
             variant: "destructive",
           });
         } else {
-          throw error;
+          toast({
+            title: "Error",
+            description: "Failed to add family member",
+            variant: "destructive",
+          });
         }
         return;
       }
@@ -86,6 +111,8 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
         description: "Failed to add family member",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -181,9 +208,10 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
           </Button>
           <Button 
             onClick={handleSave}
+            disabled={isSubmitting}
             className="bg-dashboard-accent1 text-white hover:bg-dashboard-accent1/80"
           >
-            Add Family Member
+            {isSubmitting ? 'Adding...' : 'Add Family Member'}
           </Button>
         </div>
       </DialogContent>
