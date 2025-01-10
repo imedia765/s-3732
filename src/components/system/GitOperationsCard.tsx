@@ -1,150 +1,64 @@
 import { useState, useEffect } from 'react';
-import { GitBranch, AlertCircle } from 'lucide-react';
+import { GitBranch, AlertCircle, Plus, Key } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Label } from "@/components/ui/label";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { GitOperationProgress } from './git/GitOperationProgress';
 import { GitOperationLogs } from './git/GitOperationLogs';
-
-interface GitOperationLog {
-  id: string;
-  operation_type: string;
-  status: string;
-  message: string;
-  created_at: string;
-}
+import { QuickPushButton } from './git/QuickPushButton';
+import { AddRepositoryDialog } from './git/AddRepositoryDialog';
+import { useGitOperations } from './git/useGitOperations';
 
 const GitOperationsCard = () => {
   const { toast } = useToast();
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [logs, setLogs] = useState<GitOperationLog[]>([]);
-  const [currentOperation, setCurrentOperation] = useState('');
-  const [progress, setProgress] = useState(0);
+  const { 
+    isProcessing,
+    logs,
+    currentOperation,
+    progress,
+    repositories,
+    selectedRepo,
+    showAddRepo,
+    setShowAddRepo,
+    setSelectedRepo,
+    handlePushToRepo,
+    fetchRepositories
+  } = useGitOperations();
 
-  useEffect(() => {
-    fetchLogs();
-  }, []);
+  const [showTokenDialog, setShowTokenDialog] = useState(false);
 
-  const fetchLogs = async () => {
+  const handleTokenUpdate = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const formData = new FormData(event.currentTarget);
+    const token = formData.get('github_token') as string;
+
     try {
-      console.log('Fetching git operation logs...');
-      const { data, error } = await supabase
-        .from('git_operations_logs')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) {
-        console.error('Error fetching logs:', error);
-        throw error;
-      }
-      console.log('Fetched logs:', data);
-      setLogs(data || []);
-    } catch (error) {
-      console.error('Error fetching logs:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch operation logs",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const logOperation = async (status: string, message: string) => {
-    try {
-      console.log(`Logging operation - Status: ${status}, Message: ${message}`);
-      const { error } = await supabase
-        .from('git_operations_logs')
-        .insert({
-          operation_type: 'push',
-          status,
-          message
-        });
-
-      if (error) {
-        console.error('Error logging operation:', error);
-      }
-      
-      await fetchLogs();
-    } catch (error) {
-      console.error('Error logging operation:', error);
-    }
-  };
-
-  const handlePushToMaster = async () => {
-    if (isProcessing) return;
-    
-    try {
-      setIsProcessing(true);
-      setProgress(10);
-      setCurrentOperation('Initializing git operation...');
-      await logOperation('started', 'Starting Git push operation');
-      
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) {
-        throw new Error('No active session');
-      }
-      console.log('Session verified:', session.user.id);
-
-      setProgress(30);
-      setCurrentOperation('Authenticating with GitHub...');
-      console.log('Attempting to authenticate with GitHub...');
-
-      const { data: recentOps, error: queryError } = await supabase
-        .from('git_operations_logs')
-        .select('*')
-        .eq('status', 'completed')
-        .order('created_at', { ascending: false })
-        .limit(1);
-
-      if (queryError) {
-        console.error('Error checking recent operations:', queryError);
-      } else {
-        console.log('Recent successful operations:', recentOps);
-      }
-
-      setProgress(50);
-      setCurrentOperation('Preparing to push changes...');
-      console.log('Invoking git-operations edge function...');
-
-      const { data, error } = await supabase.functions.invoke('git-operations', {
-        body: {
-          operation: 'push',
-          branch: 'main',
-          commitMessage: 'Force commit: Pushing all files to master'
-        }
+      console.log('Updating GitHub token...');
+      const { error } = await supabase.functions.invoke('update-github-token', {
+        body: { token }
       });
 
       if (error) {
-        console.error('Edge function error:', error);
-        await logOperation('failed', `Edge function error: ${error.message}`);
+        console.error('Token update error:', error);
         throw error;
       }
 
-      console.log('Push operation response:', data);
-      setProgress(100);
-      await logOperation('completed', 'Successfully pushed to main');
-      
       toast({
         title: "Success",
-        description: "Successfully pushed changes to master",
+        description: "GitHub token updated successfully",
       });
-
+      setShowTokenDialog(false);
     } catch (error: any) {
-      console.error('Push error:', error);
-      await logOperation('failed', error.message || "Unknown error occurred");
-      
+      console.error('Token update error:', error);
       toast({
-        title: "Push Failed",
-        description: error.message || "Failed to push changes. Please try again.",
+        title: "Update Failed",
+        description: error.message || "Failed to update GitHub token",
         variant: "destructive",
       });
-    } finally {
-      setIsProcessing(false);
-      setCurrentOperation('');
-      setProgress(0);
     }
   };
 
@@ -156,6 +70,47 @@ const GitOperationsCard = () => {
             <GitBranch className="w-5 h-5 text-dashboard-accent1" />
             <CardTitle className="text-xl text-white">Git Operations</CardTitle>
           </div>
+          <div className="flex gap-2">
+            <Dialog open={showTokenDialog} onOpenChange={setShowTokenDialog}>
+              <DialogTrigger asChild>
+                <Button variant="outline" size="sm" className="gap-2">
+                  <Key className="w-4 h-4" />
+                  Update Token
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="bg-dashboard-card text-white">
+                <DialogHeader>
+                  <DialogTitle>Update GitHub Token</DialogTitle>
+                  <DialogDescription className="text-dashboard-muted">
+                    Enter your GitHub Personal Access Token (PAT) with repository access.
+                  </DialogDescription>
+                </DialogHeader>
+                <form onSubmit={handleTokenUpdate} className="space-y-4">
+                  <div>
+                    <Label htmlFor="github_token">GitHub Token</Label>
+                    <input
+                      id="github_token"
+                      name="github_token"
+                      type="password"
+                      required
+                      className="w-full p-2 mt-1 bg-dashboard-card border border-white/10 rounded-md"
+                      placeholder="ghp_************************************"
+                    />
+                  </div>
+                  <Button type="submit" className="w-full">Update Token</Button>
+                </form>
+              </DialogContent>
+            </Dialog>
+            <Button
+              onClick={() => setShowAddRepo(true)}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <Plus className="w-4 h-4" />
+              Add Repository
+            </Button>
+          </div>
         </div>
         <CardDescription className="text-dashboard-muted">
           Manage Git operations and repository synchronization
@@ -166,9 +121,29 @@ const GitOperationsCard = () => {
           <AlertCircle className="h-4 w-4 text-dashboard-accent1" />
           <AlertTitle className="text-dashboard-accent1">Important</AlertTitle>
           <AlertDescription className="text-dashboard-muted">
-            Using stored GitHub token from Supabase secrets. Make sure it's configured in the Edge Functions settings.
+            Make sure your GitHub token has the correct repository permissions and is properly configured.
           </AlertDescription>
         </Alert>
+
+        <QuickPushButton isProcessing={isProcessing} />
+
+        <div className="space-y-4">
+          <div className="grid gap-2">
+            <Label htmlFor="repository">Custom Repository</Label>
+            <select
+              id="repository"
+              value={selectedRepo}
+              onChange={(e) => setSelectedRepo(e.target.value)}
+              className="w-full p-2 rounded-md bg-dashboard-card border border-white/10 text-white"
+            >
+              {repositories.map((repo) => (
+                <option key={repo.id} value={repo.id}>
+                  {repo.repo_url} ({repo.branch})
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
 
         {isProcessing && (
           <GitOperationProgress 
@@ -178,14 +153,20 @@ const GitOperationsCard = () => {
         )}
 
         <Button
-          onClick={handlePushToMaster}
-          disabled={isProcessing}
+          onClick={handlePushToRepo}
+          disabled={isProcessing || !selectedRepo}
           className="w-full bg-dashboard-accent1 hover:bg-dashboard-accent1/80"
         >
-          {isProcessing ? "Processing..." : "Push to Master"}
+          Push to Selected Repository
         </Button>
 
         <GitOperationLogs logs={logs} />
+
+        <AddRepositoryDialog
+          showAddRepo={showAddRepo}
+          setShowAddRepo={setShowAddRepo}
+          onRepositoryAdded={fetchRepositories}
+        />
       </CardContent>
     </Card>
   );

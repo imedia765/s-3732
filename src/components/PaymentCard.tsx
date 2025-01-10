@@ -1,8 +1,10 @@
 import { Card } from "@/components/ui/card";
-import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
-import 'react-circular-progressbar/dist/styles.css';
-import { format, addDays, isAfter, isBefore, differenceInDays } from 'date-fns';
-import { AlertOctagon, Check, Clock } from "lucide-react";
+import { format, differenceInDays } from "date-fns";
+import { PaymentStatus } from "./financials/payment-card/PaymentStatus";
+import { PaymentDueDate } from "./financials/payment-card/PaymentDueDate";
+import { Check, Clock, AlertOctagon } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PaymentCardProps {
   annualPaymentStatus?: 'completed' | 'pending' | 'due' | 'overdue';
@@ -14,9 +16,10 @@ interface PaymentCardProps {
   lastEmergencyPaymentDate?: string;
   lastAnnualPaymentAmount?: number;
   lastEmergencyPaymentAmount?: number;
+  memberNumber?: string;
 }
 
-const PaymentCard = ({ 
+const PaymentCard = ({
   annualPaymentStatus = 'pending',
   emergencyCollectionStatus = 'pending',
   emergencyCollectionAmount = 0,
@@ -25,8 +28,28 @@ const PaymentCard = ({
   lastAnnualPaymentDate,
   lastEmergencyPaymentDate,
   lastAnnualPaymentAmount,
-  lastEmergencyPaymentAmount
+  lastEmergencyPaymentAmount,
+  memberNumber
 }: PaymentCardProps) => {
+  // Query pending payments from Supabase
+  const { data: pendingPayments } = useQuery({
+    queryKey: ['pendingPayments', memberNumber],
+    queryFn: async () => {
+      if (!memberNumber) return [];
+      
+      const { data, error } = await supabase
+        .from('payment_requests')
+        .select('*')
+        .eq('status', 'pending')
+        .eq('member_number', memberNumber);
+      
+      if (error) throw error;
+      console.log('Pending payments for member:', memberNumber, data);
+      return data;
+    },
+    enabled: !!memberNumber
+  });
+
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'January 1st, 2025';
     try {
@@ -37,155 +60,176 @@ const PaymentCard = ({
   };
 
   const getPaymentStatusInfo = (dueDate?: string) => {
-    const defaultDueDate = new Date('2025-01-01');
-    const dueDateObj = dueDate ? new Date(dueDate) : defaultDueDate;
-    const today = new Date();
-    const twentyEightDaysAfterDue = addDays(dueDateObj, 28);
-    const sevenDaysAfterGracePeriod = addDays(twentyEightDaysAfterDue, 7);
+    if (!dueDate) return { message: "Due date not set", isOverdue: false };
     
-    if (isBefore(today, dueDateObj)) {
-      return {
-        color: 'text-blue-400',
-        message: 'Due: January 1st, 2025',
-        warning: null
+    const today = new Date();
+    const dueDateObj = new Date(dueDate);
+    const daysUntilDue = differenceInDays(dueDateObj, today);
+    const daysOverdue = differenceInDays(today, dueDateObj);
+    
+    if (daysUntilDue > 0) {
+      return { 
+        message: `Due in ${daysUntilDue} days`, 
+        isOverdue: false 
       };
-    } else if (isBefore(today, twentyEightDaysAfterDue)) {
-      return {
-        color: 'text-yellow-400',
-        message: 'Payment overdue',
-        warning: null
+    } else if (daysOverdue <= 28) {
+      return { 
+        message: `Payment overdue by ${daysOverdue} days`, 
+        isOverdue: true,
+        isGracePeriod: true
       };
     } else {
-      const daysUntilDeactivation = differenceInDays(sevenDaysAfterGracePeriod, today);
-      return {
-        color: 'text-rose-500',
-        message: 'Payment critically overdue',
-        warning: daysUntilDeactivation > 0 
-          ? `Account will be deactivated in ${daysUntilDeactivation} days`
-          : 'Account deactivation pending'
+      return { 
+        message: `Payment critically overdue - ${daysOverdue - 28} days past grace period`, 
+        isOverdue: true,
+        isGracePeriod: false
       };
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
-      case 'pending':
-        return 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30';
-      case 'due':
-        return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
-      case 'overdue':
-        return 'bg-rose-500/20 text-rose-400 border border-rose-500/30';
-      default:
-        return 'bg-blue-500/20 text-blue-400 border border-blue-500/30';
     }
   };
 
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'completed':
-        return <Check className="h-6 w-6" />;
-      case 'due':
-        return <Clock className="h-6 w-6" />;
-      case 'overdue':
-        return <AlertOctagon className="h-6 w-6" />;
+        return <Check className="h-5 w-5 text-emerald-400" />;
       case 'pending':
-        return <Clock className="h-6 w-6" />;
+      case 'due':
+        return <Clock className="h-5 w-5 text-yellow-400" />;
+      case 'overdue':
+        return <AlertOctagon className="h-5 w-5 text-rose-400" />;
       default:
-        return <Clock className="h-6 w-6" />;
+        return <Clock className="h-5 w-5 text-yellow-400" />;
     }
   };
 
-  const yearlyPaymentInfo = getPaymentStatusInfo(annualPaymentDueDate || '2025-01-01');
+  const renderPendingMessage = (paymentType: string) => {
+    const hasPendingPayment = pendingPayments?.some(p => p.payment_type === paymentType);
+    
+    // Don't show pending message if there's no actual pending payment in the database
+    if (!hasPendingPayment) return null;
+    
+    return (
+      <div className="mt-4 p-4 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+        <p className="text-yellow-400 text-sm font-medium">
+          Thank you for your {paymentType} payment submission
+        </p>
+        <p className="text-dashboard-text/70 text-xs mt-1">
+          Your payment is being reviewed and will be processed shortly
+        </p>
+      </div>
+    );
+  };
+
+  const renderOverdueWarning = (paymentType: string, dueDate?: string) => {
+    const statusInfo = getPaymentStatusInfo(dueDate);
+    const hasPendingPayment = pendingPayments?.some(p => p.payment_type === paymentType);
+    
+    // Don't show overdue warning if there's a pending payment or if not overdue
+    if (!statusInfo.isOverdue || hasPendingPayment) return null;
+    
+    return (
+      <div className="mt-4 p-4 rounded-lg bg-rose-500/10 border border-rose-500/20">
+        <p className="text-rose-400 text-sm font-medium">
+          {statusInfo.message}
+        </p>
+        <p className="text-dashboard-text/70 text-xs mt-1">
+          Please contact your collector immediately to arrange payment
+        </p>
+      </div>
+    );
+  };
 
   return (
-    <Card className="dashboard-card">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <Card className="p-8 bg-dashboard-dark border border-dashboard-cardBorder">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {/* Annual Payment Section */}
-        <div className="p-6 glass-card rounded-lg border border-white/10 hover:border-white/20 transition-colors">
-          <h3 className="text-lg font-medium text-white mb-4">Annual Payment</h3>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-2xl font-bold text-white">£40</p>
-              <p className={`text-lg font-bold ${yearlyPaymentInfo.color}`}>
-                {yearlyPaymentInfo.message}
-              </p>
-              {yearlyPaymentInfo.warning && (
-                <p className="text-sm text-rose-500 font-medium mt-2">
-                  ⚠️ {yearlyPaymentInfo.warning}
+        <div className="p-6 glass-card rounded-xl border border-dashboard-highlight/20 hover:border-dashboard-highlight/40 transition-all duration-300 shadow-lg backdrop-blur-sm">
+          <h3 className="text-xl font-semibold text-white mb-8">Annual Payment</h3>
+          <div className="space-y-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-4xl font-bold text-[#0EA5E9]">£40</p>
+                  <p className="text-sm text-dashboard-text/70">Annual membership fee</p>
+                </div>
+                <PaymentDueDate 
+                  dueDate={annualPaymentDueDate} 
+                  color="text-dashboard-accent1"
+                  statusInfo={getPaymentStatusInfo(annualPaymentDueDate)}
+                />
+              </div>
+              <div className="flex flex-col items-end space-y-4">
+                <PaymentStatus 
+                  status={annualPaymentStatus} 
+                  icon={getStatusIcon(annualPaymentStatus)}
+                />
+              </div>
+            </div>
+            {annualPaymentStatus === 'pending' && renderPendingMessage('yearly')}
+            {renderOverdueWarning('yearly', annualPaymentDueDate)}
+            {lastAnnualPaymentDate && (
+              <div className="pt-4 mt-4 border-t border-dashboard-cardBorder/30">
+                <p className="text-sm font-medium mb-2 text-dashboard-text/90">
+                  Last payment details
                 </p>
-              )}
-              {lastAnnualPaymentDate && (
-                <div className="mt-2">
-                  <p className="text-xs text-dashboard-muted">
-                    Last payment: {formatDate(lastAnnualPaymentDate)}
+                <div className="space-y-1">
+                  <p className="text-sm text-dashboard-text/80">
+                    Date: {formatDate(lastAnnualPaymentDate)}
                   </p>
                   {lastAnnualPaymentAmount && (
-                    <p className="text-xs text-emerald-400">
-                      Amount: £{lastAnnualPaymentAmount}
+                    <p className="text-sm text-[#0EA5E9] font-medium">
+                      Amount paid: £{lastAnnualPaymentAmount}
                     </p>
                   )}
                 </div>
-              )}
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium shadow-lg backdrop-blur-sm ${getStatusColor(annualPaymentStatus)}`}>
-                {annualPaymentStatus}
-              </span>
-              <div className="w-12 h-12" style={{ color: getStatusColor(annualPaymentStatus).split(' ')[1].replace('text-', '') }}>
-                {getStatusIcon(annualPaymentStatus)}
               </div>
-            </div>
+            )}
           </div>
         </div>
 
         {/* Emergency Collection Section */}
-        <div className="p-6 glass-card rounded-lg border border-white/10 hover:border-white/20 transition-colors">
-          <h3 className="text-lg font-medium text-white mb-4">Emergency Collection</h3>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <p className="text-2xl font-bold text-white">
-                £{emergencyCollectionAmount}
-              </p>
-              <p className="text-lg font-bold text-dashboard-warning">
-                Due: {formatDate(emergencyCollectionDueDate)}
-              </p>
-              {lastEmergencyPaymentDate && (
-                <div className="mt-2">
-                  <p className="text-xs text-dashboard-muted">
-                    Last payment: {formatDate(lastEmergencyPaymentDate)}
+        <div className="p-6 glass-card rounded-xl border border-dashboard-highlight/20 hover:border-dashboard-highlight/40 transition-all duration-300 shadow-lg backdrop-blur-sm">
+          <h3 className="text-xl font-semibold text-white mb-8">Emergency Collection</h3>
+          <div className="space-y-6">
+            <div className="flex items-start justify-between">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <p className="text-4xl font-bold text-[#0EA5E9]">
+                    £{emergencyCollectionAmount}
+                  </p>
+                  <p className="text-sm text-dashboard-text/70">One-time payment</p>
+                </div>
+                <PaymentDueDate 
+                  dueDate={emergencyCollectionDueDate}
+                  color="text-dashboard-accent1"
+                  statusInfo={getPaymentStatusInfo(emergencyCollectionDueDate)}
+                />
+              </div>
+              <div className="flex flex-col items-end space-y-4">
+                <PaymentStatus 
+                  status={emergencyCollectionStatus} 
+                  icon={getStatusIcon(emergencyCollectionStatus)}
+                />
+              </div>
+            </div>
+            {emergencyCollectionStatus === 'pending' && renderPendingMessage('emergency')}
+            {renderOverdueWarning('emergency', emergencyCollectionDueDate)}
+            {lastEmergencyPaymentDate && (
+              <div className="pt-4 mt-4 border-t border-dashboard-cardBorder/30">
+                <p className="text-sm font-medium mb-2 text-dashboard-text/90">
+                  Last payment details
+                </p>
+                <div className="space-y-1">
+                  <p className="text-sm text-dashboard-text/80">
+                    Date: {formatDate(lastEmergencyPaymentDate)}
                   </p>
                   {lastEmergencyPaymentAmount && (
-                    <p className="text-xs text-emerald-400">
-                      Amount: £{lastEmergencyPaymentAmount}
+                    <p className="text-sm text-[#0EA5E9] font-medium">
+                      Amount paid: £{lastEmergencyPaymentAmount}
                     </p>
                   )}
                 </div>
-              )}
-            </div>
-            <div className="flex items-center space-x-3">
-              <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium shadow-lg backdrop-blur-sm ${getStatusColor(emergencyCollectionStatus)}`}>
-                {emergencyCollectionStatus}
-              </span>
-              <div className="w-12 h-12" style={{ color: getStatusColor(emergencyCollectionStatus).split(' ')[1].replace('text-', '') }}>
-                {getStatusIcon(emergencyCollectionStatus)}
               </div>
-            </div>
-          </div>
-          <div className="text-sm text-dashboard-text">
-            {emergencyCollectionStatus === 'completed' 
-              ? 'Payment completed' 
-              : (
-                <div className="space-y-1">
-                  <p>Payment {emergencyCollectionStatus}</p>
-                  <p className="text-dashboard-muted">
-                    {emergencyCollectionStatus === 'overdue'
-                      ? 'Emergency collection payment is overdue'
-                      : 'One-time emergency collection payment required'}
-                  </p>
-                </div>
-              )}
+            )}
           </div>
         </div>
       </div>

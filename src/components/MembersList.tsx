@@ -33,7 +33,7 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
 
       const { data: collectorData } = await supabase
         .from('members_collectors')
-        .select('name')
+        .select('name, phone')
         .eq('member_number', user.user_metadata.member_number)
         .single();
 
@@ -111,12 +111,6 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
     setIsEditProfileDialogOpen(true);
   };
 
-  const handlePrint = () => {
-    // This function will be passed to MembersListHeader
-    console.log('Print functionality triggered');
-    // Add your print logic here if needed
-  };
-
   return (
     <div className="space-y-6">
       <MembersListHeader 
@@ -125,7 +119,8 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         collectorInfo={collectorInfo}
         selectedMember={selectedMember}
         onProfileUpdated={handleProfileUpdated}
-        onPrint={handlePrint}
+        onPrint={() => {}}
+        members={members}
       />
 
       <MembersListContent

@@ -6,13 +6,7 @@ import { generateMembersPDF, generateCollectorZip } from '@/utils/pdfGenerator';
 import PDFGenerationProgress from "./PDFGenerationProgress";
 import { Database } from '@/integrations/supabase/types';
 import { supabase } from "@/integrations/supabase/client";
-import { 
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { Download, FileSpreadsheet, Table } from "lucide-react";
+import DownloadButtons from "./print/DownloadButtons";
 
 type Member = Database['public']['Tables']['members']['Row'];
 
@@ -130,107 +124,8 @@ const PrintButtons = ({
     }
   };
 
-  const downloadExcel = async (members: Member[]) => {
-    try {
-      // Create Excel-compatible CSV content
-      const headers = Object.keys(members[0] || {}).join(',');
-      const rows = members.map(row => 
-        Object.values(row).map(value => 
-          typeof value === 'object' ? JSON.stringify(value) : String(value)
-        ).join(',')
-      );
-      const csv = [headers, ...rows].join('\n');
-
-      // Create and trigger download
-      const blob = new Blob([csv], { type: 'application/vnd.ms-excel' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${collectorName || 'all'}-members.xlsx`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "Excel File Downloaded",
-        description: "The Excel file has been downloaded successfully",
-      });
-    } catch (error) {
-      console.error('Download error:', error);
-      toast({
-        title: "Download Failed",
-        description: "Failed to download the Excel file",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const downloadCSV = async (members: Member[]) => {
-    try {
-      const headers = Object.keys(members[0] || {}).join(',');
-      const rows = members.map(row => 
-        Object.values(row).map(value => 
-          typeof value === 'object' ? JSON.stringify(value) : String(value)
-        ).join(',')
-      );
-      const csv = [headers, ...rows].join('\n');
-
-      const blob = new Blob([csv], { type: 'text/csv' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${collectorName || 'all'}-members.csv`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      window.URL.revokeObjectURL(url);
-
-      toast({
-        title: "CSV File Downloaded",
-        description: "The CSV file has been downloaded successfully",
-      });
-    } catch (error) {
-      console.error('Download error:', error);
-      toast({
-        title: "Download Failed",
-        description: "Failed to download the CSV file",
-        variant: "destructive",
-      });
-    }
-  };
-
-  const openInGoogleSheets = (members: Member[]) => {
-    try {
-      const headers = Object.keys(members[0] || {}).join('\t');
-      const rows = members.map(row => 
-        Object.values(row).map(value => 
-          typeof value === 'object' ? JSON.stringify(value) : String(value)
-        ).join('\t')
-      );
-      const tsv = [headers, ...rows].join('\n');
-      
-      const encodedData = encodeURIComponent(tsv);
-      const googleSheetsUrl = `https://docs.google.com/spreadsheets/d/create?usp=sharing&content=${encodedData}`;
-      
-      window.open(googleSheetsUrl, '_blank');
-
-      toast({
-        title: "Opening Google Sheets",
-        description: "The data will open in a new Google Sheets document",
-      });
-    } catch (error) {
-      console.error('Google Sheets error:', error);
-      toast({
-        title: "Error",
-        description: "Failed to open in Google Sheets",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 w-full">
       {isGenerating && (
         <PDFGenerationProgress 
           current={progress.current}
@@ -240,76 +135,28 @@ const PrintButtons = ({
       )}
       
       {collectorName ? (
-        <div className="flex gap-2">
+        <div className="flex w-full gap-2">
           <Button
             onClick={() => handlePrintCollector(collectorName)}
-            className="flex items-center gap-2 bg-dashboard-accent2 hover:bg-dashboard-accent2/80"
+            className="flex-1 items-center gap-2 bg-dashboard-accent2 hover:bg-dashboard-accent2/80"
             disabled={isGenerating}
           >
             <Printer className="w-4 h-4" />
             Print Members
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                className="flex items-center gap-2 bg-dashboard-accent1 hover:bg-dashboard-accent1/80"
-                disabled={!allMembers?.length}
-              >
-                <Download className="w-4 h-4" />
-                Download As
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => allMembers && downloadExcel(allMembers)}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Excel (.xlsx)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => allMembers && downloadCSV(allMembers)}>
-                <Table className="w-4 h-4 mr-2" />
-                CSV (.csv)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => allMembers && openInGoogleSheets(allMembers)}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Open in Google Sheets
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {allMembers && <DownloadButtons members={allMembers} collectorName={collectorName} className="flex-1" />}
         </div>
       ) : (
-        <div className="flex gap-2">
+        <div className="flex w-full gap-2">
           <Button 
             onClick={handlePrintAll}
-            className="flex items-center gap-2 bg-dashboard-accent1 hover:bg-dashboard-accent1/80"
+            className="flex-1 items-center gap-2 bg-dashboard-accent1 hover:bg-dashboard-accent1/80"
             disabled={isGenerating}
           >
             <Printer className="w-4 h-4" />
             {isGenerating ? 'Generating...' : 'Print All Members'}
           </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                className="flex items-center gap-2 bg-dashboard-accent1 hover:bg-dashboard-accent1/80"
-                disabled={!allMembers?.length}
-              >
-                <Download className="w-4 h-4" />
-                Download As
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent>
-              <DropdownMenuItem onClick={() => allMembers && downloadExcel(allMembers)}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Excel (.xlsx)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => allMembers && downloadCSV(allMembers)}>
-                <Table className="w-4 h-4 mr-2" />
-                CSV (.csv)
-              </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => allMembers && openInGoogleSheets(allMembers)}>
-                <FileSpreadsheet className="w-4 h-4 mr-2" />
-                Open in Google Sheets
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {allMembers && <DownloadButtons members={allMembers} className="flex-1" />}
         </div>
       )}
     </div>
