@@ -26,34 +26,40 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
   const [previewMemberNumber, setPreviewMemberNumber] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  const generatePreviewNumber = async (relationship: string) => {
+    if (!member.member_number || !relationship) return;
+    
+    const { data, error } = await supabase
+      .rpc('generate_family_member_number', {
+        parent_member_number: member.member_number,
+        relationship: relationship
+      });
+
+    if (error) {
+      console.error('Error generating preview number:', error);
+      return;
+    }
+
+    setPreviewMemberNumber(data);
+  };
+
   useEffect(() => {
-    const generatePreviewNumber = async () => {
-      if (!member.member_number) return;
-      
-      const { data, error } = await supabase
-        .rpc('generate_family_member_number', {
-          parent_member_number: member.member_number
-        });
-
-      if (error) {
-        console.error('Error generating preview number:', error);
-        return;
-      }
-
-      setPreviewMemberNumber(data);
-    };
-
     if (open) {
-      generatePreviewNumber();
-      // Reset form data when dialog opens
       setFormData({
         full_name: '',
         relationship: '',
         date_of_birth: '',
         gender: ''
       });
+      setPreviewMemberNumber('');
     }
-  }, [open, member.member_number]);
+  }, [open]);
+
+  useEffect(() => {
+    if (formData.relationship) {
+      generatePreviewNumber(formData.relationship);
+    }
+  }, [formData.relationship, member.member_number]);
 
   const handleSave = async () => {
     try {
@@ -67,13 +73,13 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
       }
 
       setIsSubmitting(true);
-      console.log('Submitting family member:', { ...formData, member_number: previewMemberNumber });
+      console.log('Submitting family member:', { ...formData, family_member_number: previewMemberNumber });
 
       const { error } = await supabase
         .from('family_members')
         .insert({
           member_id: member.id,
-          member_number: previewMemberNumber,
+          family_member_number: previewMemberNumber,
           full_name: formData.full_name,
           relationship: formData.relationship,
           date_of_birth: formData.date_of_birth || null,
@@ -161,7 +167,6 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
               <SelectContent>
                 <SelectItem value="spouse">Spouse</SelectItem>
                 <SelectItem value="dependant">Dependant</SelectItem>
-                <SelectItem value="adopted">Adopted</SelectItem>
               </SelectContent>
             </Select>
           </div>

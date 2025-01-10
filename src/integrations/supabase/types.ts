@@ -94,33 +94,33 @@ export type Database = {
         Row: {
           created_at: string
           date_of_birth: string | null
+          family_member_number: string
           full_name: string
           gender: string | null
           id: string
           member_id: string
-          member_number: string
           relationship: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           date_of_birth?: string | null
+          family_member_number: string
           full_name: string
           gender?: string | null
           id?: string
           member_id: string
-          member_number: string
           relationship: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           date_of_birth?: string | null
+          family_member_number?: string
           full_name?: string
           gender?: string | null
           id?: string
           member_id?: string
-          member_number?: string
           relationship?: string
           updated_at?: string
         }
@@ -594,12 +594,20 @@ export type Database = {
           details: Json
         }[]
       }
-      generate_family_member_number: {
-        Args: {
-          parent_member_number: string
-        }
-        Returns: string
-      }
+      generate_family_member_number:
+        | {
+            Args: {
+              parent_member_number: string
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              parent_member_number: string
+              relationship: string
+            }
+            Returns: string
+          }
       generate_full_backup: {
         Args: Record<PropertyKey, never>
         Returns: Json
