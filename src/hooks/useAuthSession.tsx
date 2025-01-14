@@ -35,7 +35,7 @@ export function useAuthSession() {
       // Add a small delay to ensure state is fully cleared
       await new Promise(resolve => setTimeout(resolve, 100));
       
-      // Force a clean page reload to clear any remaining state
+      // Redirect to login page
       window.location.href = '/login';
       
     } catch (error: any) {

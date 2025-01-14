@@ -29,10 +29,15 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
   const generatePreviewNumber = async (relationship: string) => {
     if (!member.member_number || !relationship) return;
     
+    console.log('Generating preview number for:', {
+      p_parent_member_number: member.member_number,
+      p_relationship: relationship
+    });
+    
     const { data, error } = await supabase
       .rpc('generate_family_member_number', {
-        parent_member_number: member.member_number,
-        relationship: relationship
+        p_parent_member_number: member.member_number,
+        p_relationship: relationship
       });
 
     if (error) {
@@ -40,6 +45,7 @@ const AddFamilyMemberDialog = ({ member, open, onOpenChange, onFamilyMemberAdded
       return;
     }
 
+    console.log('Generated preview number:', data);
     setPreviewMemberNumber(data);
   };
 

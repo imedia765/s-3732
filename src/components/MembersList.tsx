@@ -2,12 +2,14 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 import CollectorPaymentSummary from './CollectorPaymentSummary';
+import CollectorMemberPayments from './members/CollectorMemberPayments';
 import PaymentDialog from './members/PaymentDialog';
 import EditProfileDialog from './members/EditProfileDialog';
 import { Member } from "@/types/member";
 import { useToast } from "@/components/ui/use-toast";
 import MembersListHeader from './members/MembersListHeader';
 import MembersListContent from './members/MembersListContent';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface MembersListProps {
   searchTerm: string;
@@ -33,7 +35,7 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
 
       const { data: collectorData } = await supabase
         .from('members_collectors')
-        .select('name, phone')
+        .select('id, name, phone, prefix, number, email, active, created_at, updated_at')
         .eq('member_number', user.user_metadata.member_number)
         .single();
 
@@ -112,7 +114,7 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="w-full px-2 sm:px-0 space-y-4 sm:space-y-6">
       <MembersListHeader 
         userRole={userRole}
         hasMembers={members.length > 0}
@@ -123,16 +125,63 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         members={members}
       />
 
-      <MembersListContent
-        members={members}
-        isLoading={isLoading}
-        userRole={userRole}
-        onPaymentClick={handlePaymentClick}
-        onEditClick={handleEditClick}
-        currentPage={page}
-        totalPages={totalPages}
-        onPageChange={setPage}
-      />
+      <Tabs defaultValue="members" className="w-full">
+        <TabsList className="w-full bg-dashboard-card border-b border-dashboard-cardBorder">
+          <TabsTrigger 
+            value="members"
+            className="flex-1 data-[state=active]:bg-dashboard-accent1 data-[state=active]:text-white"
+          >
+            Members List
+          </TabsTrigger>
+          {userRole === 'collector' && (
+            <>
+              <TabsTrigger 
+                value="payments"
+                className="flex-1 data-[state=active]:bg-dashboard-accent1 data-[state=active]:text-white"
+              >
+                Payments
+              </TabsTrigger>
+              <TabsTrigger 
+                value="summary"
+                className="flex-1 data-[state=active]:bg-dashboard-accent1 data-[state=active]:text-white"
+              >
+                Summary
+              </TabsTrigger>
+            </>
+          )}
+        </TabsList>
+
+        <TabsContent value="members" className="mt-6">
+          <div className="overflow-hidden">
+            <MembersListContent
+              members={members}
+              isLoading={isLoading}
+              userRole={userRole}
+              onPaymentClick={handlePaymentClick}
+              onEditClick={handleEditClick}
+              currentPage={page}
+              totalPages={totalPages}
+              onPageChange={setPage}
+            />
+          </div>
+        </TabsContent>
+
+        {userRole === 'collector' && collectorInfo && (
+          <>
+            <TabsContent value="payments" className="mt-6">
+              <div className="overflow-hidden">
+                <CollectorMemberPayments collectorName={collectorInfo.name} />
+              </div>
+            </TabsContent>
+
+            <TabsContent value="summary" className="mt-6">
+              <div className="overflow-hidden">
+                <CollectorPaymentSummary collectorName={collectorInfo.name} />
+              </div>
+            </TabsContent>
+          </>
+        )}
+      </Tabs>
 
       {selectedMember && isPaymentDialogOpen && (
         <PaymentDialog
@@ -158,10 +207,6 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
           }}
           onProfileUpdated={handleProfileUpdated}
         />
-      )}
-
-      {userRole === 'collector' && collectorInfo && (
-        <CollectorPaymentSummary collectorName={collectorInfo.name} />
       )}
     </div>
   );
