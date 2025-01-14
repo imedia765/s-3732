@@ -6,7 +6,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
 const CollectorFinancialsView = () => {
-  const { data: collectorInfo } = useQuery({
+  const { data: collectorInfo, isLoading } = useQuery({
     queryKey: ['collector-info'],
     queryFn: async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -16,14 +16,18 @@ const CollectorFinancialsView = () => {
         .from('members_collectors')
         .select('id, name, phone, prefix, number, email, active, created_at, updated_at')
         .eq('member_number', user.user_metadata.member_number)
-        .single();
+        .maybeSingle();
 
       return collectorData;
     },
   });
 
-  if (!collectorInfo) {
+  if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (!collectorInfo) {
+    return <div>No collector information found</div>;
   }
 
   return (
