@@ -32,10 +32,17 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
           created_at
         `)
         .eq('collector', collectorName);
+
+      // Fetch pending payments for this collector
+      const { data: pendingPayments, error: pendingError } = await supabase
+        .from('payment_requests')
+        .select('amount, collector_id, members_collectors!payment_requests_collector_id_fkey(name)')
+        .eq('status', 'pending')
+        .eq('members_collectors.name', collectorName);
       
-      if (error) {
-        console.error('Error fetching payment stats:', error);
-        throw error;
+      if (error || pendingError) {
+        console.error('Error fetching payment stats:', error || pendingError);
+        throw error || pendingError;
       }
 
       const currentDate = new Date();
@@ -44,6 +51,10 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
 
       const stats = {
         totalMembers: members?.length || 0,
+        pendingPayments: {
+          count: pendingPayments?.length || 0,
+          amount: pendingPayments?.reduce((sum, p) => sum + Number(p.amount), 0) || 0
+        },
         yearlyPayments: {
           completed: members?.filter(m => m.yearly_payment_status === 'completed').length || 0,
           pending: members?.filter(m => m.yearly_payment_status === 'pending').length || 0,
@@ -211,22 +222,24 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
               <h4 className="text-blue-400 font-medium">Membership Status</h4>
             </div>
             <p className="text-xl font-bold text-white">
-              {paymentStats.membershipStats.active} Active
+              {paymentStats?.membershipStats.active} Active
             </p>
             <p className="text-sm text-dashboard-muted">
-              {paymentStats.membershipStats.inactive} Inactive
+              {paymentStats?.membershipStats.inactive} Inactive
             </p>
           </div>
 
           <div className="glass-card p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Clock className="w-5 h-5 text-green-400" />
-              <h4 className="text-green-400 font-medium">Recent Activity</h4>
+              <PoundSterling className="w-5 h-5 text-yellow-400" />
+              <h4 className="text-yellow-400 font-medium">Pending Payments</h4>
             </div>
             <p className="text-xl font-bold text-white">
-              {paymentStats.recentActivity.recentPayments} Payments
+              £{paymentStats?.pendingPayments.amount || 0}
             </p>
-            <p className="text-sm text-dashboard-muted">Last 30 days</p>
+            <p className="text-sm text-dashboard-muted">
+              {paymentStats?.pendingPayments.count || 0} payments pending
+            </p>
           </div>
 
           <div className="glass-card p-4">
@@ -235,7 +248,7 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
               <h4 className="text-purple-400 font-medium">New Members</h4>
             </div>
             <p className="text-xl font-bold text-white">
-              {paymentStats.membershipStats.newMembers}
+              {paymentStats?.membershipStats.newMembers}
             </p>
             <p className="text-sm text-dashboard-muted">Last 30 days</p>
           </div>
