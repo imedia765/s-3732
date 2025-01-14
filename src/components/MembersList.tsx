@@ -9,7 +9,7 @@ import { Member } from "@/types/member";
 import { useToast } from "@/components/ui/use-toast";
 import MembersListHeader from './members/MembersListHeader';
 import MembersListContent from './members/MembersListContent';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { DashboardTabs, DashboardTabsList, DashboardTabsTrigger, DashboardTabsContent } from "@/components/ui/dashboard-tabs";
 
 interface MembersListProps {
   searchTerm: string;
@@ -125,33 +125,24 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         members={members}
       />
 
-      <Tabs defaultValue="members" className="w-full">
-        <TabsList className="w-full bg-dashboard-card border-b border-dashboard-cardBorder">
-          <TabsTrigger 
-            value="members"
-            className="flex-1 data-[state=active]:bg-dashboard-accent1 data-[state=active]:text-white"
-          >
+      <DashboardTabs defaultValue="members" className="w-full">
+        <DashboardTabsList>
+          <DashboardTabsTrigger value="members">
             Members List
-          </TabsTrigger>
+          </DashboardTabsTrigger>
           {userRole === 'collector' && (
             <>
-              <TabsTrigger 
-                value="payments"
-                className="flex-1 data-[state=active]:bg-dashboard-accent1 data-[state=active]:text-white"
-              >
+              <DashboardTabsTrigger value="payments">
                 Payments
-              </TabsTrigger>
-              <TabsTrigger 
-                value="summary"
-                className="flex-1 data-[state=active]:bg-dashboard-accent1 data-[state=active]:text-white"
-              >
+              </DashboardTabsTrigger>
+              <DashboardTabsTrigger value="summary">
                 Summary
-              </TabsTrigger>
+              </DashboardTabsTrigger>
             </>
           )}
-        </TabsList>
+        </DashboardTabsList>
 
-        <TabsContent value="members" className="mt-6">
+        <DashboardTabsContent value="members">
           <div className="overflow-hidden">
             <MembersListContent
               members={members}
@@ -164,24 +155,24 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
               onPageChange={setPage}
             />
           </div>
-        </TabsContent>
+        </DashboardTabsContent>
 
         {userRole === 'collector' && collectorInfo && (
           <>
-            <TabsContent value="payments" className="mt-6">
+            <DashboardTabsContent value="payments">
               <div className="overflow-hidden">
                 <CollectorMemberPayments collectorName={collectorInfo.name} />
               </div>
-            </TabsContent>
+            </DashboardTabsContent>
 
-            <TabsContent value="summary" className="mt-6">
+            <DashboardTabsContent value="summary">
               <div className="overflow-hidden">
                 <CollectorPaymentSummary collectorName={collectorInfo.name} />
               </div>
-            </TabsContent>
+            </DashboardTabsContent>
           </>
         )}
-      </Tabs>
+      </DashboardTabs>
 
       {selectedMember && isPaymentDialogOpen && (
         <PaymentDialog
