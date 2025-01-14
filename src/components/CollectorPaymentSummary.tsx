@@ -3,7 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card } from "@/components/ui/card";
 import { CircularProgressbar, buildStyles } from 'react-circular-progressbar';
 import 'react-circular-progressbar/dist/styles.css';
-import { Loader2, Receipt, CreditCard, PoundSterling, Calendar, Users, Clock, AlertCircle } from "lucide-react";
+import { Loader2, Receipt, CreditCard, PoundSterling, Users, AlertCircle } from "lucide-react";
 import { formatDate } from "@/lib/dateFormat";
 
 interface PaymentSummaryProps {
@@ -110,7 +110,7 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center p-4">
-        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <Loader2 className="h-6 w-6 animate-spin text-dashboard-accent1" />
       </div>
     );
   }
@@ -155,7 +155,7 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
                     Next due: {formatDate(paymentStats.yearlyPayments.nextDueDate)}
                   </p>
                 )}
-                <p className="text-sm text-red-400 mt-1">
+                <p className="text-sm text-dashboard-error mt-1">
                   {paymentStats.yearlyPayments.overdue} overdue payments
                 </p>
               </div>
@@ -165,8 +165,8 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
                   text={`${yearlyPaymentPercentage}%`}
                   styles={buildStyles({
                     textSize: '1.5rem',
-                    pathColor: '#4CAF50',
-                    textColor: '#4CAF50',
+                    pathColor: '#9B87F5',
+                    textColor: '#9B87F5',
                     trailColor: 'rgba(255,255,255,0.1)',
                   })}
                 />
@@ -201,8 +201,8 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
                   text={`${emergencyPaymentPercentage}%`}
                   styles={buildStyles({
                     textSize: '1.5rem',
-                    pathColor: '#FF9800',
-                    textColor: '#FF9800',
+                    pathColor: '#7E69AB',
+                    textColor: '#7E69AB',
                     trailColor: 'rgba(255,255,255,0.1)',
                   })}
                 />
@@ -218,8 +218,8 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
           <div className="glass-card p-4">
             <div className="flex items-center gap-2 mb-2">
-              <Users className="w-5 h-5 text-blue-400" />
-              <h4 className="text-blue-400 font-medium">Membership Status</h4>
+              <Users className="w-5 h-5 text-dashboard-accent1" />
+              <h4 className="text-dashboard-accent1 font-medium">Membership Status</h4>
             </div>
             <p className="text-xl font-bold text-white">
               {paymentStats?.membershipStats.active} Active
@@ -231,8 +231,8 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
 
           <div className="glass-card p-4">
             <div className="flex items-center gap-2 mb-2">
-              <PoundSterling className="w-5 h-5 text-yellow-400" />
-              <h4 className="text-yellow-400 font-medium">Pending Payments</h4>
+              <PoundSterling className="w-5 h-5 text-dashboard-accent2" />
+              <h4 className="text-dashboard-accent2 font-medium">Pending Payments</h4>
             </div>
             <p className="text-xl font-bold text-white">
               £{paymentStats?.pendingPayments.amount || 0}
@@ -244,8 +244,8 @@ const CollectorPaymentSummary = ({ collectorName }: PaymentSummaryProps) => {
 
           <div className="glass-card p-4">
             <div className="flex items-center gap-2 mb-2">
-              <AlertCircle className="w-5 h-5 text-purple-400" />
-              <h4 className="text-purple-400 font-medium">New Members</h4>
+              <AlertCircle className="w-5 h-5 text-dashboard-accent1" />
+              <h4 className="text-dashboard-accent1 font-medium">New Members</h4>
             </div>
             <p className="text-xl font-bold text-white">
               {paymentStats?.membershipStats.newMembers}
