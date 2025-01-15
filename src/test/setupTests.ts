@@ -1,53 +1,45 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
-import { vi } from 'vitest';
-import { render } from '@testing-library/react';
+import { expect, afterEach, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import type { ReactElement } from 'react';
 
-// Mock matchMedia
-Object.defineProperty(window, 'matchMedia', {
-  writable: true,
-  value: vi.fn().mockImplementation(query => ({
-    matches: false,
-    media: query,
-    onchange: null,
-    addListener: vi.fn(),
-    removeListener: vi.fn(),
-    addEventListener: vi.fn(),
-    removeEventListener: vi.fn(),
-    dispatchEvent: vi.fn(),
-  })),
+// Setup a basic DOM environment for tests
+import { JSDOM } from 'jsdom';
+
+const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+  url: 'http://localhost:3000',
+  pretendToBeVisual: true,
+  resources: 'usable'
 });
 
-// Mock ResizeObserver
-global.ResizeObserver = class ResizeObserver {
-  observe() {}
-  unobserve() {}
-  disconnect() {}
+global.window = dom.window;
+global.document = dom.window.document;
+global.navigator = {
+  userAgent: 'node.js',
+} as Navigator;
+
+// Mock localStorage
+global.localStorage = {
+  getItem: vi.fn(),
+  setItem: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+  length: 0,
+  key: vi.fn(),
 };
 
-// Mock IntersectionObserver
-global.IntersectionObserver = class IntersectionObserver {
-  root: Element | null = null;
-  rootMargin: string = "0px";
-  thresholds: ReadonlyArray<number> = [0];
-  
-  constructor() {
-    // Constructor implementation
-  }
-  
-  observe() {}
-  unobserve() {}
-  disconnect() {}
-  takeRecords(): IntersectionObserverEntry[] { return []; }
-};
-
-// Mock window.scrollTo
-Object.defineProperty(window, 'scrollTo', {
-  value: () => {},
-  writable: true
-});
+// Mock window.matchMedia
+global.window.matchMedia = vi.fn().mockImplementation(query => ({
+  matches: false,
+  media: query,
+  onchange: null,
+  addListener: vi.fn(),
+  removeListener: vi.fn(),
+  addEventListener: vi.fn(),
+  removeEventListener: vi.fn(),
+  dispatchEvent: vi.fn(),
+}));
 
 // Mock Supabase client
 vi.mock('@/integrations/supabase/client', () => ({
@@ -80,15 +72,19 @@ export function renderWithProviders(ui: ReactElement) {
     },
   });
 
-  return render(
-    <QueryClientProvider client={queryClient}>
-      {ui}
-    </QueryClientProvider>
-  );
+  return {
+    queryClient,
+    ...render(
+      <QueryClientProvider client={queryClient}>
+        {ui}
+      </QueryClientProvider>
+    ),
+  };
 }
 
 // Cleanup after each test case
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  localStorage.clear();
 });

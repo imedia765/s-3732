@@ -125,22 +125,38 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
         members={members}
       />
 
-      <DashboardTabs defaultValue="members" className="w-full">
-        <DashboardTabsList>
-          <DashboardTabsTrigger value="members">
-            Members List
-          </DashboardTabsTrigger>
+      <DashboardTabs defaultValue="summary" className="w-full">
+        <DashboardTabsList className="w-full grid grid-cols-1 sm:grid-cols-3 gap-0">
           {userRole === 'collector' && (
             <>
-              <DashboardTabsTrigger value="payments">
-                Payments
-              </DashboardTabsTrigger>
-              <DashboardTabsTrigger value="summary">
+              <DashboardTabsTrigger value="summary" className="w-full">
                 Summary
+              </DashboardTabsTrigger>
+              <DashboardTabsTrigger value="payments" className="w-full">
+                Payments
               </DashboardTabsTrigger>
             </>
           )}
+          <DashboardTabsTrigger value="members" className="w-full">
+            Members List
+          </DashboardTabsTrigger>
         </DashboardTabsList>
+
+        {userRole === 'collector' && collectorInfo && (
+          <>
+            <DashboardTabsContent value="summary">
+              <div className="overflow-hidden">
+                <CollectorPaymentSummary collectorName={collectorInfo.name} />
+              </div>
+            </DashboardTabsContent>
+
+            <DashboardTabsContent value="payments">
+              <div className="overflow-hidden">
+                <CollectorMemberPayments collectorName={collectorInfo.name} />
+              </div>
+            </DashboardTabsContent>
+          </>
+        )}
 
         <DashboardTabsContent value="members">
           <div className="overflow-hidden">
@@ -156,22 +172,6 @@ const MembersList = ({ searchTerm, userRole }: MembersListProps) => {
             />
           </div>
         </DashboardTabsContent>
-
-        {userRole === 'collector' && collectorInfo && (
-          <>
-            <DashboardTabsContent value="payments">
-              <div className="overflow-hidden">
-                <CollectorMemberPayments collectorName={collectorInfo.name} />
-              </div>
-            </DashboardTabsContent>
-
-            <DashboardTabsContent value="summary">
-              <div className="overflow-hidden">
-                <CollectorPaymentSummary collectorName={collectorInfo.name} />
-              </div>
-            </DashboardTabsContent>
-          </>
-        )}
       </DashboardTabs>
 
       {selectedMember && isPaymentDialogOpen && (

@@ -2,14 +2,15 @@ import LoginForm from '@/components/auth/LoginForm';
 import CommitteeUpdate from '@/components/auth/CommitteeUpdate';
 import MembershipExpectations from '@/components/auth/MembershipExpectations';
 import ImportantInformation from '@/components/auth/ImportantInformation';
-import MedicalExaminer from '@/components/auth/MedicalExaminer';
 
 const Login = () => {
   return (
     <div className="min-h-screen bg-dashboard-dark">
       {/* Header Banner */}
       <div className="w-full bg-dashboard-card/50 py-6 text-center border-b border-white/10">
-        <p className="text-2xl text-white font-arabic mb-2">بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ</p>
+        <p className="text-2xl text-white font-arabic mb-2 relative inline-block animate-[shimmer_2s_ease-in-out_infinite] bg-gradient-to-r from-dashboard-accent1/30 via-dashboard-accent1 to-dashboard-accent1/30 bg-[length:200%_100%] bg-clip-text text-transparent">
+          بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ
+        </p>
         <p className="text-sm text-dashboard-text">In the name of Allah, the Most Gracious, the Most Merciful</p>
       </div>
 
@@ -32,7 +33,6 @@ const Login = () => {
             <CommitteeUpdate />
             <MembershipExpectations />
             <ImportantInformation />
-            <MedicalExaminer />
           </div>
 
           {/* Footer */}
