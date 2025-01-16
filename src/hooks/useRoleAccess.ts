@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 export type UserRole = 'member' | 'collector' | 'admin' | null;
 
-const ROLE_STALE_TIME = 1000 * 60; // 1 minute - reduced from 5 minutes for faster role updates
+const ROLE_STALE_TIME = 1000 * 60; // 1 minute
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
@@ -66,12 +66,6 @@ export const useRoleAccess = () => {
       console.log('Fetching roles for user:', sessionData.user.id);
       
       try {
-        // Special case for TM10003
-        if (sessionData.user.user_metadata?.member_number === 'TM10003') {
-          console.log('Special access granted for TM10003');
-          return 'admin' as UserRole;
-        }
-
         // Get all roles for the user
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
@@ -152,11 +146,6 @@ export const useRoleAccess = () => {
     console.log('Checking access for tab:', tab, 'User role:', userRole);
     
     if (!userRole) return false;
-
-    // Special case for TM10003
-    if (sessionData?.user?.user_metadata?.member_number === 'TM10003') {
-      return ['dashboard', 'users', 'collectors', 'audit', 'system', 'financials'].includes(tab);
-    }
 
     switch (userRole) {
       case 'admin':

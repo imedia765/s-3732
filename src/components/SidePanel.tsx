@@ -17,6 +17,8 @@ interface SidePanelProps {
 }
 
 const SidePanel = ({ onTabChange, userRole }: SidePanelProps) => {
+  console.log('SidePanel rendered with role:', userRole); // Debug log
+  
   const isAdmin = userRole === 'admin';
   const isCollector = userRole === 'collector';
   const { handleSignOut } = useAuthSession();
