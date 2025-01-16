@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 
 export type UserRole = 'member' | 'collector' | 'admin' | null;
 
-const ROLE_STALE_TIME = 1000 * 60; // 1 minute
+const ROLE_STALE_TIME = 0; // Set to 0 to disable caching
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
@@ -66,12 +66,13 @@ export const useRoleAccess = () => {
       console.log('Fetching roles for user:', sessionData.user.id);
       
       try {
-        // Get all roles for the user
+        // Get all roles for the user with cache-busting headers
         console.log('Querying user_roles table...');
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
-          .eq('user_id', sessionData.user.id);
+          .eq('user_id', sessionData.user.id)
+          .order('created_at', { ascending: false });
 
         if (roleError) {
           console.error('Error fetching roles:', roleError);
@@ -145,6 +146,7 @@ export const useRoleAccess = () => {
     },
     enabled: !!sessionData?.user?.id,
     staleTime: ROLE_STALE_TIME,
+    cacheTime: ROLE_STALE_TIME,
     retry: MAX_RETRIES,
     retryDelay: RETRY_DELAY,
     refetchOnWindowFocus: true,
