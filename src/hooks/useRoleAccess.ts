@@ -74,6 +74,8 @@ export const useRoleAccess = () => {
 
         if (roleError) throw roleError;
 
+        console.log('Role data:', roleData); // Debug log
+
         if (roleData && roleData.length > 0) {
           console.log('Found roles:', roleData);
           const roles = roleData.map(r => r.role);
