@@ -70,7 +70,7 @@ export const useRoleAccess = () => {
         console.log('Querying user_roles table...');
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
-          .select('role')
+          .select('*')
           .eq('user_id', sessionData.user.id)
           .order('created_at', { ascending: false });
 
