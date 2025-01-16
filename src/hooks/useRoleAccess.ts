@@ -67,43 +67,51 @@ export const useRoleAccess = () => {
       
       try {
         // Get all roles for the user
+        console.log('Querying user_roles table...');
         const { data: roleData, error: roleError } = await supabase
           .from('user_roles')
           .select('role')
           .eq('user_id', sessionData.user.id);
 
-        if (roleError) throw roleError;
+        if (roleError) {
+          console.error('Error fetching roles:', roleError);
+          throw roleError;
+        }
 
-        console.log('Role data:', roleData); // Debug log
+        console.log('Raw role data from database:', roleData);
 
         if (roleData && roleData.length > 0) {
-          console.log('Found roles:', roleData);
+          console.log('Found roles in database:', roleData);
           const roles = roleData.map(r => r.role);
+          console.log('Mapped roles:', roles);
           
           // Return highest priority role
           if (roles.includes('admin')) {
-            console.log('User has admin role');
+            console.log('User has admin role, returning admin');
             return 'admin' as UserRole;
           }
           if (roles.includes('collector')) {
-            console.log('User has collector role');
+            console.log('User has collector role, returning collector');
             return 'collector' as UserRole;
           }
           if (roles.includes('member')) {
-            console.log('User has member role');
+            console.log('User has member role, returning member');
             return 'member' as UserRole;
           }
         }
 
         // Fallback to checking collector status
-        console.log('Checking collector status...');
+        console.log('No roles found in user_roles, checking collector status...');
         const { data: collectorData, error: collectorError } = await supabase
           .from('members_collectors')
           .select('name')
           .eq('member_number', sessionData.user.user_metadata.member_number)
           .maybeSingle();
 
-        if (collectorError) throw collectorError;
+        if (collectorError) {
+          console.error('Error checking collector status:', collectorError);
+          throw collectorError;
+        }
 
         if (collectorData) {
           console.log('User is a collector');
@@ -118,7 +126,10 @@ export const useRoleAccess = () => {
           .eq('auth_user_id', sessionData.user.id)
           .maybeSingle();
 
-        if (memberError) throw memberError;
+        if (memberError) {
+          console.error('Error checking member status:', memberError);
+          throw memberError;
+        }
 
         if (memberData?.id) {
           console.log('User is a regular member');
