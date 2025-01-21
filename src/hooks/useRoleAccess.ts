@@ -20,6 +20,12 @@ interface RoleState {
   };
 }
 
+const ROLE_PRIORITY: Record<UserRole, number> = {
+  'admin': 3,
+  'collector': 2,
+  'member': 1
+};
+
 const isValidRole = (role: string): role is UserRole => {
   return ['admin', 'collector', 'member'].includes(role);
 };
@@ -114,16 +120,14 @@ export const useRoleAccess = () => {
 
         console.log('[RoleAccess] Mapped roles:', validRoles);
 
-        // Set primary role (admin > collector > member)
-        const primaryRole = validRoles.includes('admin' as UserRole) 
-          ? 'admin' as UserRole 
-          : validRoles.includes('collector' as UserRole)
-            ? 'collector' as UserRole
-            : 'member' as UserRole;
+        // Get highest priority role
+        const primaryRole = validRoles.reduce((highest, current) => {
+          return ROLE_PRIORITY[current] > ROLE_PRIORITY[highest] ? current : highest;
+        }, 'member' as UserRole);
 
-        console.log('[RoleAccess] Final role determination:', {
-          userRole: primaryRole,
-          userRoles: validRoles,
+        console.log('[RoleAccess] Role priority selection:', {
+          availableRoles: validRoles,
+          selectedRole: primaryRole,
           timestamp: new Date().toISOString()
         });
         
