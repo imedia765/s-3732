@@ -20,6 +20,10 @@ interface RoleState {
   };
 }
 
+const isValidRole = (role: string): role is UserRole => {
+  return ['admin', 'collector', 'member'].includes(role);
+};
+
 export const useRoleAccess = () => {
   const { toast } = useToast();
   const {
@@ -41,9 +45,10 @@ export const useRoleAccess = () => {
       setIsLoading(true);
       
       try {
-        const { data: { session } } = await supabase.auth.getSession();
+        const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
         
-        if (!session?.user) {
+        if (sessionError) throw sessionError;
+        if (!sessionData?.session?.user) {
           console.log('[RoleAccess] No authenticated session found');
           setUserRoles(null);
           setUserRole(null);
@@ -51,8 +56,8 @@ export const useRoleAccess = () => {
         }
 
         console.log('[RoleAccess] Fetching roles for user:', {
-          userId: session.user.id,
-          email: session.user.email,
+          userId: sessionData.session.user.id,
+          email: sessionData.session.user.email,
           timestamp: new Date().toISOString()
         });
 
@@ -61,7 +66,7 @@ export const useRoleAccess = () => {
         const { data: memberData, error: memberError } = await supabase
           .from('members')
           .select('member_number')
-          .eq('auth_user_id', session.user.id)
+          .eq('auth_user_id', sessionData.session.user.id)
           .maybeSingle();
 
         if (memberError && memberError.code !== 'PGRST116') {
@@ -69,7 +74,7 @@ export const useRoleAccess = () => {
           throw memberError;
         }
 
-        // Fetch all roles with retry logic and no caching
+        // Fetch all roles with retry logic
         let retryCount = 0;
         const maxRetries = 3;
         let roleData = null;
@@ -80,7 +85,8 @@ export const useRoleAccess = () => {
             const { data, error: rolesError } = await supabase
               .from('user_roles')
               .select('*')
-              .eq('user_id', session.user.id);
+              .eq('user_id', sessionData.session.user.id)
+              .order('created_at', { ascending: false });
 
             if (rolesError) throw rolesError;
             roleData = data;
@@ -102,25 +108,28 @@ export const useRoleAccess = () => {
 
         console.log('[RoleAccess] Raw role data from database:', roleData);
 
-        const userRoles = roleData?.map(r => r.role as UserRole) || ['member'];
-        console.log('[RoleAccess] Mapped roles:', userRoles);
+        const validRoles = roleData
+          ?.map(r => r.role)
+          .filter(isValidRole) || ['member'];
+
+        console.log('[RoleAccess] Mapped roles:', validRoles);
 
         // Set primary role (admin > collector > member)
-        const primaryRole = userRoles.includes('admin' as UserRole) 
+        const primaryRole = validRoles.includes('admin' as UserRole) 
           ? 'admin' as UserRole 
-          : userRoles.includes('collector' as UserRole)
+          : validRoles.includes('collector' as UserRole)
             ? 'collector' as UserRole
             : 'member' as UserRole;
 
         console.log('[RoleAccess] Final role determination:', {
           userRole: primaryRole,
-          userRoles,
+          userRoles: validRoles,
           timestamp: new Date().toISOString()
         });
         
-        setUserRoles(userRoles);
+        setUserRoles(validRoles);
         setUserRole(primaryRole);
-        return userRoles;
+        return validRoles;
       } catch (error: any) {
         console.error('[RoleAccess] Role fetch error:', error);
         
@@ -136,10 +145,8 @@ export const useRoleAccess = () => {
         setIsLoading(false);
       }
     },
-    retry: 3,
-    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
-    staleTime: 0,
     gcTime: 0,
+    staleTime: 0,
     refetchOnMount: true,
     refetchOnWindowFocus: true,
     refetchInterval: 5000 // Poll every 5 seconds
