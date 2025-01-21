@@ -114,11 +114,12 @@ export const useRoleAccess = () => {
 
         console.log('[RoleAccess] Raw role data from database:', roleData);
 
-        const validRoles = roleData
+        // Extract valid roles and ensure member is always included as fallback
+        const validRoles = (roleData
           ?.map(r => r.role)
-          .filter(isValidRole) || ['member'];
+          .filter(isValidRole) || ['member']) as UserRole[];
 
-        console.log('[RoleAccess] Mapped roles:', validRoles);
+        console.log('[RoleAccess] Valid roles after filtering:', validRoles);
 
         // Get highest priority role
         const primaryRole = validRoles.reduce((highest, current) => {
@@ -128,6 +129,7 @@ export const useRoleAccess = () => {
         console.log('[RoleAccess] Role priority selection:', {
           availableRoles: validRoles,
           selectedRole: primaryRole,
+          priority: ROLE_PRIORITY[primaryRole],
           timestamp: new Date().toISOString()
         });
         
