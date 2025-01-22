@@ -91,8 +91,7 @@ export const useRoleAccess = () => {
             const { data, error: rolesError } = await supabase
               .from('user_roles')
               .select('*')
-              .eq('user_id', sessionData.session.user.id)
-              .order('created_at', { ascending: false });
+              .eq('user_id', sessionData.session.user.id);
 
             if (rolesError) throw rolesError;
             roleData = data;
@@ -151,11 +150,8 @@ export const useRoleAccess = () => {
         setIsLoading(false);
       }
     },
-    gcTime: 0,
-    staleTime: 0,
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
-    refetchInterval: 5000 // Poll every 5 seconds
+    retry: 3,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000)
   });
 
   const hasRole = (role: UserRole): boolean => {
