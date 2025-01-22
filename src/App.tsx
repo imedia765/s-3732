@@ -6,6 +6,7 @@ import { Toaster } from "@/components/ui/toaster";
 import Login from '@/pages/Login';
 import Index from '@/pages/Index';
 import ProtectedRoutes from '@/components/routing/ProtectedRoutes';
+import { Loader2 } from "lucide-react";
 
 function App() {
   const { session, loading: sessionLoading } = useAuthSession();
@@ -23,9 +24,13 @@ function App() {
     console.log('App render state:', appState);
   }, [appState]);
 
-  // Only show loading during initial session check
-  if (sessionLoading && !session) {
-    return null;
+  // Show loading spinner during initial session check
+  if (sessionLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-dashboard-dark">
+        <Loader2 className="w-8 h-8 animate-spin text-dashboard-accent1" />
+      </div>
+    );
   }
 
   return (
