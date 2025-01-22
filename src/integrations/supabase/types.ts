@@ -875,12 +875,6 @@ export type Database = {
         }
         Returns: boolean
       }
-      is_admin_user: {
-        Args: {
-          user_uid: string
-        }
-        Returns: boolean
-      }
       is_payment_overdue: {
         Args: {
           due_date: string
