@@ -4,6 +4,7 @@ import LoginButton from './login/LoginButton';
 import LegalLinks from './login/LegalLinks';
 
 const LoginForm = () => {
+  console.log('Rendering LoginForm component');
   const { memberNumber, setMemberNumber, loading, handleLogin } = useLoginForm();
 
   return (
