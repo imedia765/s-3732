@@ -1,19 +1,39 @@
-import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Dispatch, SetStateAction } from 'react';
+import { UserRole } from "@/types/collector-roles";
 
-export const CollectorRolesHeader = () => {
+interface CollectorRolesHeaderProps {
+  selectedRole: UserRole | 'all';
+  onRoleChange: Dispatch<SetStateAction<UserRole | 'all'>>;
+  totalCount: number;
+  filteredCount: number;
+}
+
+export const CollectorRolesHeader = ({
+  selectedRole,
+  onRoleChange,
+  totalCount,
+  filteredCount
+}: CollectorRolesHeaderProps) => {
   return (
-    <TableHeader>
-      <TableRow className="border-dashboard-cardBorder hover:bg-dashboard-card/50">
-        <TableHead className="text-dashboard-accent1">Collector</TableHead>
-        <TableHead className="text-dashboard-accent1">Member #</TableHead>
-        <TableHead className="text-dashboard-accent1">Contact Info</TableHead>
-        <TableHead className="text-dashboard-accent1">Roles & Access</TableHead>
-        <TableHead className="text-dashboard-accent1">Role History</TableHead>
-        <TableHead className="text-dashboard-accent1">Enhanced Role Status</TableHead>
-        <TableHead className="text-dashboard-accent1">Role Store Status</TableHead>
-        <TableHead className="text-dashboard-accent1">Sync Status</TableHead>
-        <TableHead className="text-dashboard-accent1">Permissions</TableHead>
-      </TableRow>
-    </TableHeader>
+    <div className="flex items-center justify-between">
+      <div>
+        <h2 className="text-lg font-semibold">Collector Roles</h2>
+        <p className="text-sm text-muted-foreground">
+          Showing {filteredCount} of {totalCount} collectors
+        </p>
+      </div>
+      <div className="flex items-center space-x-2">
+        <select
+          value={selectedRole}
+          onChange={(e) => onRoleChange(e.target.value as UserRole | 'all')}
+          className="select"
+        >
+          <option value="all">All Roles</option>
+          <option value="admin">Admin</option>
+          <option value="collector">Collector</option>
+          <option value="member">Member</option>
+        </select>
+      </div>
+    </div>
   );
 };

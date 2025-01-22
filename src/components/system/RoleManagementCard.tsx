@@ -33,7 +33,10 @@ const RoleManagementCard = () => {
           searchTerm={searchTerm}
           onSearchChange={setSearchTerm}
         />
-        <CollectorRolesList />
+        <CollectorRolesList 
+          searchTerm={searchTerm}
+          onDebugLog={updateDebugLogs}
+        />
         <RoleManagementList 
           searchTerm={searchTerm} 
           onDebugLog={updateDebugLogs}

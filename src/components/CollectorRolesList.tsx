@@ -25,7 +25,7 @@ const CollectorRolesList = ({ searchTerm, onDebugLog }: CollectorRolesListProps)
   const queryClient = useQueryClient();
   const { toast } = useToast();
 
-  const { data: collectors = [], isLoading } = useCollectorsData(searchTerm, selectedRole, page, onDebugLog);
+  const { data: collectors = [], isLoading } = useCollectorsData();
 
   const handleRoleChange = async (userId: string, newRole: UserRole) => {
     try {
@@ -48,6 +48,17 @@ const CollectorRolesList = ({ searchTerm, onDebugLog }: CollectorRolesListProps)
     }
   };
 
+  const handleSync = async (userId: string): Promise<void> => {
+    try {
+      console.log('[CollectorRolesList] Syncing roles for user:', userId);
+      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate sync
+      console.log('[CollectorRolesList] Sync completed');
+    } catch (error) {
+      console.error('[CollectorRolesList] Sync error:', error);
+      throw error;
+    }
+  };
+
   const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
     const { scrollTop, scrollHeight, clientHeight } = e.currentTarget;
     if (scrollHeight - scrollTop <= clientHeight * 1.5) {
@@ -58,8 +69,6 @@ const CollectorRolesList = ({ searchTerm, onDebugLog }: CollectorRolesListProps)
   return (
     <div className="space-y-6">
       <CollectorRolesHeader
-        searchTerm={searchTerm}
-        onSearchChange={() => {}}
         selectedRole={selectedRole}
         onRoleChange={setSelectedRole}
         totalCount={collectors?.length || 0}
@@ -73,7 +82,7 @@ const CollectorRolesList = ({ searchTerm, onDebugLog }: CollectorRolesListProps)
               key={collector.member_number}
               collector={collector}
               onRoleChange={handleRoleChange}
-              onSync={() => {}}
+              onSync={handleSync}
             />
           ))}
         </TableBody>
