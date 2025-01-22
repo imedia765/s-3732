@@ -1,4 +1,4 @@
-import { UserRole } from "@/types/roles";
+import { UserRole, RolePermissions } from "@/types/roles";
 
 export const ROLE_PRIORITY: Record<UserRole, number> = {
   'admin': 3,
@@ -16,7 +16,7 @@ export const getPrimaryRole = (roles: UserRole[]): UserRole => {
   }, 'member' as UserRole);
 };
 
-export const mapRolesToPermissions = (roles: UserRole[] | null) => {
+export const mapRolesToPermissions = (roles: UserRole[] | null): RolePermissions => {
   const permissions = {
     canManageUsers: false,
     canCollectPayments: false,
